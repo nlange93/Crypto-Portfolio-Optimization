@@ -1,4 +1,4 @@
-# Crypto Portfolio Optimization using R
+# Crypto Portfolio Optimization in R
 
 For educational purposes only!!
 
