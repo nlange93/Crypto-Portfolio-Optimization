@@ -1,0 +1,106 @@
+---
+title: "R Notebook"
+author: nico
+date: 24.02.21
+output: html_document
+params:
+  crypto: ["XBTEUR","ETHEUR","ADAEUR","DOTEUR","XRPEUR", "LTCEUR","BCHEUR", "UNIEUR", "XDGEUR"]
+---
+
+The code chunk appears:
+```{r}
+library(dplyr)
+library(lubridate)
+library(tibble)
+library(plotly)
+source("kraken.R")
+
+```
+
+```{r}
+crypto <- get_return(pairs = params$crypto, interval = "minute")
+mean_ret <- colMeans(crypto)
+cov_mat <- cov(crypto) * 365
+
+```
+
+```{r}
+n <- 10000
+# Creating empty containers for :
+all_wts <- matrix(nrow = n,
+                  ncol = length(params$crypto)) #weights
+port_returns <- vector('numeric', length = n) #returns
+port_risk <- vector('numeric', length = n) #risk
+sharpe_ratio <- vector('numeric', length = n) #sharpe_ratio
+```
+
+
+```{r}
+for (i in seq_along(port_returns)) {
+  wts <- runif(length(params$crypto))
+  wts <- wts/sum(wts)
+  
+  # Storing weight in the matrix
+  all_wts[i,] <- wts
+  
+  # Portfolio returns
+  
+  port_ret <- sum(wts * mean_ret)
+  port_ret <- ((port_ret + 1)^365) - 1
+  
+  # Storing Portfolio Returns values
+  port_returns[i] <- port_ret
+  
+  
+  # Creating and storing portfolio risk
+  port_sd <- sqrt(t(wts) %*% (cov_mat  %*% wts))
+  port_risk[i] <- port_sd
+  
+  # Creating and storing Portfolio Sharpe Ratios
+  # Assuming 0% Risk free rate
+  
+  sr <- port_ret/port_sd
+  sharpe_ratio[i] <- sr
+  
+}
+```
+
+```{r}
+# Storing the values in the table
+portfolio_values <- tibble(Return = port_returns,
+                  Risk = port_risk,
+                  SharpeRatio = sharpe_ratio)
+
+
+# Converting matrix to a tibble and changing column names
+all_wts <- as.data.frame(all_wts)
+colnames(all_wts) <- colnames(crypto)
+
+# Combing all the values together
+portfolio_values <- cbind(all_wts, portfolio_values)
+```
+
+```{r}
+min_var <- portfolio_values[which.min(portfolio_values$Risk),]
+max_sr <- portfolio_values[which.max(portfolio_values$SharpeRatio),]
+```
+
+```{r}
+p <- portfolio_values %>%
+  ggplot(aes(x = Risk, y = Return, color = SharpeRatio)) +
+  geom_point() +
+  theme_classic() +
+  labs(x = 'Annualized Risk',
+       y = 'Annualized Returns',
+       title = "Portfolio Optimization & Efficient Frontier") +
+  geom_point(aes(x = Risk,
+                 y = Return), data = min_var, color = 'red') +
+  geom_point(aes(x = Risk,
+                 y = Return), data = max_sr, color = 'green')
+  
+  
+
+ggplotly(p)
+```
+
+
