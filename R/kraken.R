@@ -6,6 +6,7 @@ get_ohlc<- function(pair = "XBTEUR",
   Interval <- case_when(
     interval == "minute" ~ 1,
     interval == "5 minutes" ~ 5,
+    interval == "3 minutes" ~ 3,
     interval == "hour" ~ 60,
     interval == "day" ~ 1440,
     interval == "week" ~ 10080)
@@ -32,7 +33,7 @@ get_return <- function(pairs = c("XBTEUR"), interval = "day", since = FALSE){
       mutate(time = as_datetime(as.numeric(as.character(V1))),
              open <- as.numeric(as.character(V2)),
              close <- as.numeric(as.character(V5)),
-             return = (open/close)-1) %>% 
+             return = (close/open)-1) %>% 
       select(time, return)
     if (i == 1){out = rbind(out, request)} else{
       out = left_join(out, request, by = "time")

@@ -4,15 +4,11 @@ author: nico
 date: 24.02.21
 output: html_document
 params:
-  crypto: ["XBTEUR", "ADAEUR", "USDT", "DOTEUR", "XRPEUR","LTCEUR","LINKEUR","BCHEUR","XLMEUR","USDCEUR","UNIEUR",
-           "XDGEUR","AAVEEUR","ATOMEUR","XMREUR" ,"EOSEUR","TRXEUR","XTZEUR","DAIEUR","SNXEUR","ALGOEUR","COMPEUR",
-           "GRTEUR","FILEUR","DASHEUR","KSMEUR","ZECEUR","ETCEUR","YFIEUR","ICXEUR","WAVESEUR","BATEUR","FLOWEUR",
-           "NANOEUR","OMGEUR","SCEUR","LSKEUR","KNCEUR","REPEUR","REPV2EUR","BALEUR","KAVAEUR","GNOEUR","ANTEUR",
-           "OXTEUR","STORJEUR","KEEPEUR","PAXGEUR","TBTCEUR","MLNEUR"]
+  crypto: ["XBTEUR", "ETHEUR", "ADAEUR", "DOTEUR", "XRPEUR", "LTCEUR", "BCHEUR", "XDGEUR", "ATOMEUR", "EOSEUR", "ALGOEUR", "GRTEUR", "FILEUR", "KNCEUR", "KAVAEUR", "KEEPEUR", "STORJEUR", "MANAEUR"]
 ---
 
 The code chunk appears:
-```{r}
+```{r, echo = FALSE}
 library(dplyr)
 library(lubridate)
 library(tibble)
@@ -22,14 +18,20 @@ source("kraken.R")
 ```
 
 ```{r}
-crypto <- get_return(pairs = params$crypto, interval = "minute")
+crypto <- get_return(pairs = params$crypto, interval = "5 minutes")
+crypto <- rownames_to_column(crypto)
+crypto <- crypto %>% mutate(rowname= hms(substr(rowname, 12,20)))
+crypto <- crypto %>% filter(hour(rowname)< 12) %>% select(-rowname)
+
+
 mean_ret <- colMeans(crypto)
-cov_mat <- cov(crypto) * 365
+cov_mat <- cov(crypto) * 300
+
 
 ```
 
 ```{r}
-n <- 10000
+n <- 10000000
 # Creating empty containers for :
 all_wts <- matrix(nrow = n,
                   ncol = length(params$crypto)) #weights
@@ -50,7 +52,7 @@ for (i in seq_along(port_returns)) {
   # Portfolio returns
   
   port_ret <- sum(wts * mean_ret)
-  port_ret <- ((port_ret + 1)^365) - 1
+  port_ret <- ((port_ret + 1)^303) - 1
   
   # Storing Portfolio Returns values
   port_returns[i] <- port_ret
